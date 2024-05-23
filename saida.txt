@@ -42,7 +42,33 @@ reject2 * ( * halt-reject
 0 0 0 l 0
 0 1 1 l 0
 0 * # r aux0
-2o # # r 2o
+
+
+2o # # r acharFinalFita
 2i # # r 2i
 3 # # r 3
 4 # # r 4
+
+
+; Estado para encontrar o final dos dados
+acharFinalFita * * r acharFinalFita
+acharFinalFita @ * r shift_init
+
+; Deslocar o marcador @ para a direita
+shift_init * * r shift_init  ; Pula sobre os símbolos até o espaço em branco
+shift_init _ @ l prepare_shift  ; Move @ para a direita e inicia o deslocamento de símbolos
+
+; Preparar para deslocar símbolos
+prepare_shift * * l prepare_shift
+prepare_shift @ _ l shift_right
+
+; Deslocar símbolos para a direita
+shift_right 0 _ r write_0  ; Lê 0, move para a direita para escrever 0
+shift_right 1 _ r write_1  ; Lê 1, move para a direita para escrever 1
+shift_right _ * l shift_right
+shift_right # * r final_clean
+
+write_0 * 0 l shift_right  ; Escreve 0 e retorna para ler o próximo símbolo
+write_1 * 1 l shift_right  ; Escreve 1 e retorna para ler o próximo símbolo
+
+final_clean _ * * VOLTA_estado_que_chamou(2)

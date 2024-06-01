@@ -21,22 +21,45 @@ class MTConverter
 
     static void Main()
     {
-        bool ok = CriarArquivos(); //Retorno true se o arquivo de entrada existir e o de saida for criado
-        if (ok)
-            ProcessaMaquinaTuring();
+        try
+        {
+            bool ok = CriarArquivos(); //Retorno true se o arquivo de entrada existir e o de saida for criado
+
+            if (ok)
+            {
+                using StreamReader reader = new(inputFile);
+                using StreamWriter writer = new(outFile);
+                string ModeloEntrada = reader.ReadLine();
+
+                if (ModeloEntrada == ";S")
+                {
+                    ProcessaMaquinaTuring(reader, writer);
+                }
+                else if (ModeloEntrada == ";I")
+                {
+                    SimulaMTDIEmMT(reader, writer);
+                }
+                else
+                {
+                    throw new Exception("Não foi possível identificar o modelo da máquina de entreda.");
+                }         
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
     }
 
-    private static void ProcessaMaquinaTuring()
+    private static void ProcessaMaquinaTuring(StreamReader reader, StreamWriter writer)
     {
-        using StreamReader reader = new(inputFile);
-        using StreamWriter writer = new(outFile);
         string line;
 
         List<string> novasConfiguracoes = new()
         {
-            "0 0 0 l 0",
-            "0 1 1 l 0",
-            $"0 * # r {EstadoAuxiliar}"
+            $"0 0 0 {MovimentoEsquerda} 0",
+            $"0 1 1 {MovimentoEsquerda} 0",
+            $"0 * # {MovimentoDireita} {EstadoAuxiliar}"
         };
 
         while ((line = reader.ReadLine()) != null)
@@ -128,23 +151,25 @@ class MTConverter
     public static string GetCurrentDirectory()
     {
         // Obtém o caminho completo do arquivo em execução
-        string executablePath = Assembly.GetExecutingAssembly().Location.Split("bin").First();     
+        string executablePath = Assembly.GetExecutingAssembly().Location.Split("bin").First();
 
         // Retorna o diretório do arquivo
         return Path.GetDirectoryName(executablePath);
     }
 
-    static private void SimulaMTDIEmMT()
+    static private void SimulaMTDIEmMT(StreamReader reader, StreamWriter writer)
     {
-        using StreamReader reader = new(inputFile);
-        using StreamWriter writer = new(outFile);
         string line;
 
         List<string> novasConfiguracoes = new()
         {
-            "0 0 0 l 0",
-            "0 1 1 l 0",
-            $"0 * # r {EstadoAuxiliar}"
+            $"0 0 0 {MovimentoEsquerda} 0",
+            $"0 1 1 {MovimentoEsquerda} 0",
+            $"0 _ # {MovimentoDireita} achaFinalFita",
+            $"achaFinalFita * * {MovimentoDireita} achaFinalFita",
+            $"achaFinalFita _ @ {MovimentoEsquerda} voltarinicio",
+            $"voltarinicio * * {MovimentoEsquerda} voltarinicio",
+            $"voltarinicio # * {MovimentoDireita} {EstadoAuxiliar}"
         };
 
         while ((line = reader.ReadLine()) != null)
@@ -178,11 +203,14 @@ class MTConverter
                     newSymbol = delimitador;
                     direction = MovimentoDireita;
 
-                    string novaConfiguracao = $"{currentState} {currentSymbol} {newSymbol} {direction} {newState}";
+                    string novaConfiguracao = $"{currentState} {currentSymbol} {newSymbol} {direction} {"acharFinalFita" + newState}";
 
                     //Verifica se a lista de novas configurações ja possui a configuração
                     if (!novasConfiguracoes.Contains(novaConfiguracao))
+                    {
                         novasConfiguracoes.Add(novaConfiguracao);
+                        novasConfiguracoes.AddRange(AdicionarEstadosSimuladoresMTDI(newState));
+                    }
                 }
 
                 writer.WriteLine(line);
@@ -196,5 +224,43 @@ class MTConverter
         }
 
         AdicionarNovasConfiguracoes(writer, novasConfiguracoes);
+    }
+
+    static List<string> AdicionarEstadosSimuladoresMTDI(string estadoOriginal)
+    {
+        //Para nao ocorrer indeterminismo teremos que criar cada configuração seguinte para cada estado que recebe um mov p esquerda
+        //Novas Estados:
+        string acharFinalFita = "acharFinalFita" + estadoOriginal;
+        string moverMarcadorFinalFita = "moverMarcadorFinalFita" + estadoOriginal;
+        string preparaDeslocamentoSimbolos = "preparaDeslocamentoSimbolos" + estadoOriginal;
+        string deslocamentoSimbolos = "deslocamentoSimbolos" + estadoOriginal;
+        string escreve1 = "escreve1" + estadoOriginal;
+        string escreve0 = "escreve0" + estadoOriginal;
+        string fimDeslocamento = "fimDeslocamento" + estadoOriginal;
+
+        List<string> novasConfiguracoes = new() {
+            //Estado para encontrar o final dos dados
+            $"{acharFinalFita} * * {MovimentoDireita} {acharFinalFita}",
+            $"{acharFinalFita} @ * {MovimentoDireita} {moverMarcadorFinalFita}",
+            //Deslocar o marcador @ para a direita
+            $"{moverMarcadorFinalFita} * * {MovimentoDireita} {moverMarcadorFinalFita}", // Pula sobre os símbolos até o espaço em branco
+            $"{moverMarcadorFinalFita} _ @ {MovimentoEsquerda} {preparaDeslocamentoSimbolos}", //Move @ para a direita e inicia o deslocamento de símbolos
+            $"{preparaDeslocamentoSimbolos} * * {MovimentoEsquerda} {preparaDeslocamentoSimbolos}",
+            $"{preparaDeslocamentoSimbolos} @ _ {MovimentoEsquerda} {deslocamentoSimbolos}",
+            //Deslocar símbolos para a direita
+            $"{deslocamentoSimbolos} 0 _ {MovimentoDireita} {escreve0}", //Lê 0, move para a direita para escrever 0
+            $"{deslocamentoSimbolos} 1 _ {MovimentoDireita} {escreve1}", //Lê 1, move para a direita para escrever 1
+            $"{deslocamentoSimbolos} _ * {MovimentoEsquerda} {deslocamentoSimbolos}",
+            $"{deslocamentoSimbolos} # * {MovimentoDireita} {fimDeslocamento}",
+            
+            //
+            $"{escreve0} * 0 {MovimentoEsquerda} {deslocamentoSimbolos}", //Escreve 0 e retorna para ler o próximo símbolo
+            $"{escreve1} * 1 {MovimentoEsquerda} {deslocamentoSimbolos}", //Escreve 1 e retorna para ler o próximo símbolo
+
+            //Após o deslocamento, volta para o estado original com o cabeçote no novo espaço em branco
+            $"{fimDeslocamento} _ * * {estadoOriginal}"
+        };
+
+        return novasConfiguracoes;
     }
 }

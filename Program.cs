@@ -1,14 +1,14 @@
-﻿// See https://aka.ms/new-console-template for more information
-
-//Console.WriteLine("Hello, World!");
-
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 
-class MTConverter
+class Program
 {
     private static readonly string directory = GetCurrentDirectory();
-    private static readonly string inputFile = $"{directory}\\entrada.txt";
-    private static readonly string outFile = $"{directory}\\saida.txt";
+    private static readonly string inputFile = $"{directory}/entrada.txt";
+    private static readonly string outFile = $"{directory}/saida.txt";
 
     private static readonly string EstadoAuxiliar = "aux0";
     private static readonly string EstadoInicial = "0";
@@ -19,7 +19,7 @@ class MTConverter
     private static readonly string MovimentoEsquerda = "l";
     private static readonly string MovimentoEstacioario = "*";
 
-    static void Main()
+    public static void Main(string[] args)
     {
         try
         {
@@ -33,16 +33,20 @@ class MTConverter
 
                 if (ModeloEntrada == ";S")
                 {
-                    ProcessaMaquinaTuring(reader, writer);
+                    writer.WriteLine(";I");
+                    SimulaMTEmMTDI(reader, writer);
+                    Console.WriteLine("saida Gerada");
                 }
                 else if (ModeloEntrada == ";I")
                 {
+                    writer.WriteLine(";S");
                     SimulaMTDIEmMT(reader, writer);
+                    Console.WriteLine("saida ;S gerada");
                 }
                 else
                 {
-                    throw new Exception("Não foi possível identificar o modelo da máquina de entreda.");
-                }         
+                    throw new Exception("Não foi possível identificar o modelo da máquina de entrada.");
+                }
             }
         }
         catch (Exception ex)
@@ -50,17 +54,16 @@ class MTConverter
             Console.WriteLine(ex.ToString());
         }
     }
-
-    private static void ProcessaMaquinaTuring(StreamReader reader, StreamWriter writer)
+    private static void SimulaMTEmMTDI(StreamReader reader, StreamWriter writer)
     {
         string line;
 
         List<string> novasConfiguracoes = new()
-        {
-            $"0 0 0 {MovimentoEsquerda} 0",
-            $"0 1 1 {MovimentoEsquerda} 0",
-            $"0 * # {MovimentoDireita} {EstadoAuxiliar}"
-        };
+    {
+        $"0 0 0 {MovimentoEsquerda} 0",
+        $"0 1 1 {MovimentoEsquerda} 0",
+        $"0 * # {MovimentoDireita} {EstadoAuxiliar}"
+    };
 
         while ((line = reader.ReadLine()) != null)
         {
@@ -112,65 +115,30 @@ class MTConverter
 
         AdicionarNovasConfiguracoes(writer, novasConfiguracoes);
     }
-
-    private static bool CriarArquivos()
-    {
-        // Cria o arquivo de saída
-        if (!File.Exists(outFile))
-            File.CreateText(outFile);
-
-        return (File.Exists(inputFile) || File.Exists(outFile));
-    }
-
-    static bool IgnorarLinha(string line)
-    {
-        //Ignora a linha (retorn true) caso a linha esteja em branco ou inicie com ";"
-        return line.FirstOrDefault().ToString() == "\0" || line.StartsWith(";");
-    }
-
-    static string SubstituirEstado(string source, string find, string replace)
-    {
-        int position = source.IndexOf(find);
-        if (position < 0)
-        {
-            return source; // Nada foi encontrado para substituir, retorna a string original
-        }
-
-        // Realiza a substituição da primeira ocorrência
-        return source.Substring(0, position) + replace + source.Substring(position + find.Length);
-    }
-
-    static void AdicionarNovasConfiguracoes(StreamWriter writer, List<string> novasConfiguracoes)
-    {
-        writer.WriteLine("; Novas configurações geradas");
-
-        foreach (var item in novasConfiguracoes)
-            writer.WriteLine(item);
-    }
-
-    public static string GetCurrentDirectory()
-    {
-        // Obtém o caminho completo do arquivo em execução
-        string executablePath = Assembly.GetExecutingAssembly().Location.Split("bin").First();
-
-        // Retorna o diretório do arquivo
-        return Path.GetDirectoryName(executablePath);
-    }
-
     static private void SimulaMTDIEmMT(StreamReader reader, StreamWriter writer)
     {
         string line;
 
         List<string> novasConfiguracoes = new()
-        {
-            $"0 0 0 {MovimentoEsquerda} 0",
-            $"0 1 1 {MovimentoEsquerda} 0",
-            $"0 _ # {MovimentoDireita} achaFinalFita",
-            $"achaFinalFita * * {MovimentoDireita} achaFinalFita",
-            $"achaFinalFita _ @ {MovimentoEsquerda} voltarinicio",
-            $"voltarinicio * * {MovimentoEsquerda} voltarinicio",
-            $"voltarinicio # * {MovimentoDireita} {EstadoAuxiliar}"
-        };
+    {
+        $"0 0 & {MovimentoEsquerda} achaFinalFita0",
+        $"0 1 & {MovimentoEsquerda} achaFinalFita1",
+
+        $"achaFinalFita0 * * {MovimentoDireita} achaFinalFita0",
+        $"achaFinalFita0 _ @ {MovimentoEsquerda} acharFinalFitavoltarinicio0",
+        $"voltarinicio0 * * {MovimentoEsquerda} voltarinicio0",
+        $"voltarinicio0 # # {MovimentoDireita} fimvoltarinicio0",
+        $"fimvoltarinicio0 * 0 * {EstadoAuxiliar}",
+
+        $"achaFinalFita1 * * {MovimentoDireita} achaFinalFita1",
+        $"achaFinalFita1 _ @ {MovimentoEsquerda} acharFinalFitavoltarinicio1",
+        $"voltarinicio1 * * {MovimentoEsquerda} voltarinicio1",
+        $"voltarinicio1 # # {MovimentoDireita} fimvoltarinicio1",
+        $"fimvoltarinicio1 * 1 * {EstadoAuxiliar}",
+    };
+
+        novasConfiguracoes.AddRange(AdicionarEstadosSimuladoresMTDI("voltarinicio0"));
+        novasConfiguracoes.AddRange(AdicionarEstadosSimuladoresMTDI("voltarinicio1"));
 
         while ((line = reader.ReadLine()) != null)
         {
@@ -191,6 +159,23 @@ class MTConverter
                 string newSymbol = parts[2];
                 string direction = parts[3];
                 string newState = parts[4];
+
+                if (currentSymbol == "_" && newSymbol == "_" && direction == MovimentoEsquerda)
+                {
+                    string novaConfiguracao = $"{currentState} @ @ l {newState}";
+
+                    if (!novasConfiguracoes.Contains(novaConfiguracao))
+                        novasConfiguracoes.Add(novaConfiguracao);
+                }
+
+
+                if (currentSymbol == "_" && newSymbol == "_" && newState == "halt")
+                {
+                    string novaConfiguracao = $"{currentState} # # * {newState}";
+
+                    if (!novasConfiguracoes.Contains(novaConfiguracao))
+                        novasConfiguracoes.Add(novaConfiguracao);
+                }
 
                 if (newState == EstadoInicial || currentState == EstadoInicial)
                     line = SubstituirEstado(line, EstadoInicial, EstadoAuxiliar);
@@ -225,7 +210,45 @@ class MTConverter
 
         AdicionarNovasConfiguracoes(writer, novasConfiguracoes);
     }
+    private static bool CriarArquivos()
+    {
+        // Cria o arquivo de saída
+        if (!File.Exists(outFile))
+            File.CreateText(outFile);
 
+        return (File.Exists(inputFile) || File.Exists(outFile));
+    }
+    static bool IgnorarLinha(string line)
+    {
+        //Ignora a linha (retorn true) caso a linha esteja em branco ou inicie com ";"
+        return line.FirstOrDefault().ToString() == "\0" || line.StartsWith(";");
+    }
+    static string SubstituirEstado(string source, string find, string replace)
+    {
+        int position = source.IndexOf(find);
+        if (position < 0)
+        {
+            return source; // Nada foi encontrado para substituir, retorna a string original
+        }
+
+        // Realiza a substituição da primeira ocorrência
+        return source.Substring(0, position) + replace + source.Substring(position + find.Length);
+    }
+    static void AdicionarNovasConfiguracoes(StreamWriter writer, List<string> novasConfiguracoes)
+    {
+        writer.WriteLine("; Novas configurações geradas");
+
+        foreach (var item in novasConfiguracoes)
+            writer.WriteLine(item);
+    }
+    public static string GetCurrentDirectory()
+    {
+        // Obtém o caminho completo do arquivo em execução
+        string executablePath = Assembly.GetExecutingAssembly().Location.Split("bin").First();
+
+        // Retorna o diretório do arquivo
+        return Path.GetDirectoryName(executablePath);
+    }
     static List<string> AdicionarEstadosSimuladoresMTDI(string estadoOriginal)
     {
         //Para nao ocorrer indeterminismo teremos que criar cada configuração seguinte para cada estado que recebe um mov p esquerda
@@ -239,28 +262,32 @@ class MTConverter
         string fimDeslocamento = "fimDeslocamento" + estadoOriginal;
 
         List<string> novasConfiguracoes = new() {
-            //Estado para encontrar o final dos dados
-            $"{acharFinalFita} * * {MovimentoDireita} {acharFinalFita}",
-            $"{acharFinalFita} @ * {MovimentoDireita} {moverMarcadorFinalFita}",
-            //Deslocar o marcador @ para a direita
-            $"{moverMarcadorFinalFita} * * {MovimentoDireita} {moverMarcadorFinalFita}", // Pula sobre os símbolos até o espaço em branco
-            $"{moverMarcadorFinalFita} _ @ {MovimentoEsquerda} {preparaDeslocamentoSimbolos}", //Move @ para a direita e inicia o deslocamento de símbolos
-            $"{preparaDeslocamentoSimbolos} * * {MovimentoEsquerda} {preparaDeslocamentoSimbolos}",
-            $"{preparaDeslocamentoSimbolos} @ _ {MovimentoEsquerda} {deslocamentoSimbolos}",
-            //Deslocar símbolos para a direita
-            $"{deslocamentoSimbolos} 0 _ {MovimentoDireita} {escreve0}", //Lê 0, move para a direita para escrever 0
-            $"{deslocamentoSimbolos} 1 _ {MovimentoDireita} {escreve1}", //Lê 1, move para a direita para escrever 1
-            $"{deslocamentoSimbolos} _ * {MovimentoEsquerda} {deslocamentoSimbolos}",
-            $"{deslocamentoSimbolos} # * {MovimentoDireita} {fimDeslocamento}",
-            
-            //
-            $"{escreve0} * 0 {MovimentoEsquerda} {deslocamentoSimbolos}", //Escreve 0 e retorna para ler o próximo símbolo
-            $"{escreve1} * 1 {MovimentoEsquerda} {deslocamentoSimbolos}", //Escreve 1 e retorna para ler o próximo símbolo
+        //Estado para encontrar o final dos dados
+        $"{acharFinalFita} * * {MovimentoDireita} {acharFinalFita}",
+        $"{acharFinalFita} @ * {MovimentoDireita} {moverMarcadorFinalFita}",
+        //Deslocar o marcador @ para a direita
+        $"{moverMarcadorFinalFita} * * {MovimentoDireita} {moverMarcadorFinalFita}", // Pula sobre os símbolos até o espaço em branco
+        $"{moverMarcadorFinalFita} _ @ {MovimentoEsquerda} {preparaDeslocamentoSimbolos}", //Move @ para a direita e inicia o deslocamento de símbolos
+        $"{preparaDeslocamentoSimbolos} * * {MovimentoEsquerda} {preparaDeslocamentoSimbolos}",
+        $"{preparaDeslocamentoSimbolos} @ _ {MovimentoEsquerda} {deslocamentoSimbolos}",
+        //Deslocar símbolos para a direita
+        $"{deslocamentoSimbolos} 0 _ {MovimentoDireita} {escreve0}", //Lê 0, move para a direita para escrever 0
+        $"{deslocamentoSimbolos} 1 _ {MovimentoDireita} {escreve1}", //Lê 1, move para a direita para escrever 1
+        $"{deslocamentoSimbolos} _ * {MovimentoEsquerda} {deslocamentoSimbolos}",
+        $"{deslocamentoSimbolos} # * {MovimentoDireita} {fimDeslocamento}",
 
-            //Após o deslocamento, volta para o estado original com o cabeçote no novo espaço em branco
-            $"{fimDeslocamento} _ * * {estadoOriginal}"
-        };
+        //
+        $"{escreve0} * 0 {MovimentoEsquerda} {deslocamentoSimbolos}", //Escreve 0 e retorna para ler o próximo símbolo
+        $"{escreve1} * 1 {MovimentoEsquerda} {deslocamentoSimbolos}", //Escreve 1 e retorna para ler o próximo símbolo
+
+        //Após o deslocamento, volta para o estado original com o cabeçote no novo espaço em branco
+        $"{fimDeslocamento} _ * * {estadoOriginal}"
+    };
+
+        if (estadoOriginal.Contains("voltarinicio"))
+            novasConfiguracoes.Add($"{deslocamentoSimbolos} & # r {fimDeslocamento}");
 
         return novasConfiguracoes;
     }
+
 }

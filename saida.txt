@@ -1,3 +1,4 @@
+;S
 ; Converts a number from binary to decimal.
 ; It does this by successively incrementing the decimal counter and decrementing the binary input until 0 is reached.
 ; Input: A single number in binary.
@@ -35,14 +36,51 @@ aux0 * * * 1
 21a _ _ r halt
 
 
+
+
+
 ; Novas configurações geradas
-0 0 0 l 0
-0 1 1 l 0
-0 _ # r achaFinalFita
-achaFinalFita * * r achaFinalFita
-achaFinalFita _ @ l voltarinicio
-voltarinicio * * l voltarinicio
-voltarinicio # * r aux0
+0 0 & l achaFinalFita0
+0 1 & l achaFinalFita1
+achaFinalFita0 * * r achaFinalFita0
+achaFinalFita0 _ @ l acharFinalFitavoltarinicio0
+voltarinicio0 * * l voltarinicio0
+voltarinicio0 # # r fimvoltarinicio0
+fimvoltarinicio0 * 0 * aux0
+achaFinalFita1 * * r achaFinalFita1
+achaFinalFita1 _ @ l acharFinalFitavoltarinicio1
+voltarinicio1 * * l voltarinicio1
+voltarinicio1 # # r fimvoltarinicio1
+fimvoltarinicio1 * 1 * aux0
+acharFinalFitavoltarinicio0 * * r acharFinalFitavoltarinicio0
+acharFinalFitavoltarinicio0 @ * r moverMarcadorFinalFitavoltarinicio0
+moverMarcadorFinalFitavoltarinicio0 * * r moverMarcadorFinalFitavoltarinicio0
+moverMarcadorFinalFitavoltarinicio0 _ @ l preparaDeslocamentoSimbolosvoltarinicio0
+preparaDeslocamentoSimbolosvoltarinicio0 * * l preparaDeslocamentoSimbolosvoltarinicio0
+preparaDeslocamentoSimbolosvoltarinicio0 @ _ l deslocamentoSimbolosvoltarinicio0
+deslocamentoSimbolosvoltarinicio0 0 _ r escreve0voltarinicio0
+deslocamentoSimbolosvoltarinicio0 1 _ r escreve1voltarinicio0
+deslocamentoSimbolosvoltarinicio0 _ * l deslocamentoSimbolosvoltarinicio0
+deslocamentoSimbolosvoltarinicio0 # * r fimDeslocamentovoltarinicio0
+escreve0voltarinicio0 * 0 l deslocamentoSimbolosvoltarinicio0
+escreve1voltarinicio0 * 1 l deslocamentoSimbolosvoltarinicio0
+fimDeslocamentovoltarinicio0 _ * * voltarinicio0
+deslocamentoSimbolosvoltarinicio0 & # r fimDeslocamentovoltarinicio0
+acharFinalFitavoltarinicio1 * * r acharFinalFitavoltarinicio1
+acharFinalFitavoltarinicio1 @ * r moverMarcadorFinalFitavoltarinicio1
+moverMarcadorFinalFitavoltarinicio1 * * r moverMarcadorFinalFitavoltarinicio1
+moverMarcadorFinalFitavoltarinicio1 _ @ l preparaDeslocamentoSimbolosvoltarinicio1
+preparaDeslocamentoSimbolosvoltarinicio1 * * l preparaDeslocamentoSimbolosvoltarinicio1
+preparaDeslocamentoSimbolosvoltarinicio1 @ _ l deslocamentoSimbolosvoltarinicio1
+deslocamentoSimbolosvoltarinicio1 0 _ r escreve0voltarinicio1
+deslocamentoSimbolosvoltarinicio1 1 _ r escreve1voltarinicio1
+deslocamentoSimbolosvoltarinicio1 _ * l deslocamentoSimbolosvoltarinicio1
+deslocamentoSimbolosvoltarinicio1 # * r fimDeslocamentovoltarinicio1
+escreve0voltarinicio1 * 0 l deslocamentoSimbolosvoltarinicio1
+escreve1voltarinicio1 * 1 l deslocamentoSimbolosvoltarinicio1
+fimDeslocamentovoltarinicio1 _ * * voltarinicio1
+deslocamentoSimbolosvoltarinicio1 & # r fimDeslocamentovoltarinicio1
+1a @ @ l 2
 2 # # r acharFinalFita2
 acharFinalFita2 * * r acharFinalFita2
 acharFinalFita2 @ * r moverMarcadorFinalFita2
@@ -71,6 +109,7 @@ deslocamentoSimbolos3 # * r fimDeslocamento3
 escreve03 * 0 l deslocamentoSimbolos3
 escreve13 * 1 l deslocamentoSimbolos3
 fimDeslocamento3 _ * * 3
+3 @ @ l 4
 4 # # r acharFinalFita4
 acharFinalFita4 * * r acharFinalFita4
 acharFinalFita4 @ * r moverMarcadorFinalFita4
@@ -85,6 +124,7 @@ deslocamentoSimbolos4 # * r fimDeslocamento4
 escreve04 * 0 l deslocamentoSimbolos4
 escreve14 * 1 l deslocamentoSimbolos4
 fimDeslocamento4 _ * * 4
+20 @ @ l 21
 21 # # r acharFinalFita21
 acharFinalFita21 * * r acharFinalFita21
 acharFinalFita21 @ * r moverMarcadorFinalFita21
@@ -99,6 +139,7 @@ deslocamentoSimbolos21 # * r fimDeslocamento21
 escreve021 * 0 l deslocamentoSimbolos21
 escreve121 * 1 l deslocamentoSimbolos21
 fimDeslocamento21 _ * * 21
+21 @ @ l 21
 21a # # r acharFinalFita21a
 acharFinalFita21a * * r acharFinalFita21a
 acharFinalFita21a @ * r moverMarcadorFinalFita21a
@@ -113,3 +154,4 @@ deslocamentoSimbolos21a # * r fimDeslocamento21a
 escreve021a * 0 l deslocamentoSimbolos21a
 escreve121a * 1 l deslocamentoSimbolos21a
 fimDeslocamento21a _ * * 21a
+21a # # * halt
